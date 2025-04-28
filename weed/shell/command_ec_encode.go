@@ -69,11 +69,12 @@ func (c *commandEcEncode) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 	forceChanges := encodeCommand.Bool("force", false, "force the encoding even if the cluster has less than recommended 4 nodes")
 	shardReplicaPlacement := encodeCommand.String("shardReplicaPlacement", "", "replica placement for EC shards, or master default if empty")
 	applyBalancing := encodeCommand.Bool("rebalance", false, "re-balance EC shards after creation")
+	skipLocks := encodeCommand.Bool("yoloLocks", false, "don't require global cluster locks")
 
 	if err = encodeCommand.Parse(args); err != nil {
 		return nil
 	}
-	if err = commandEnv.confirmIsLocked(args); err != nil {
+	if err = commandEnv.confirmIsLocked(args); !*skipLocks && err != nil {
 		return
 	}
 	rp, err := parseReplicaPlacementArg(commandEnv, *shardReplicaPlacement)
@@ -115,7 +116,7 @@ func (c *commandEcEncode) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 
 	// encode all requested volumes...
 	for _, vid := range volumeIds {
-		if err = doEcEncode(commandEnv, *collection, vid, *maxParallelization); err != nil {
+		if err = doEcEncode(commandEnv, *collection, vid, *maxParallelization, *skipLocks); err != nil {
 			return fmt.Errorf("ec encode for volume %d: %v", vid, err)
 		}
 	}
@@ -127,10 +128,10 @@ func (c *commandEcEncode) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 	return nil
 }
 
-func doEcEncode(commandEnv *CommandEnv, collection string, vid needle.VolumeId, maxParallelization int) error {
+func doEcEncode(commandEnv *CommandEnv, collection string, vid needle.VolumeId, maxParallelization int, skipLocks bool) error {
 	var ewg *ErrorWaitGroup
 
-	if !commandEnv.isLocked() {
+	if !skipLocks && !commandEnv.isLocked() {
 		return fmt.Errorf("lock is lost")
 	}
 
