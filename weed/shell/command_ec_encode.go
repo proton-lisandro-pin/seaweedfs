@@ -121,7 +121,7 @@ func (c *commandEcEncode) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 		}
 	}
 	// ...then re-balance ec shards.
-	if err := EcBalance(commandEnv, collections, "", rp, *maxParallelization, *applyBalancing); err != nil {
+	if err := EcBalance(commandEnv, collections, "", rp, *maxParallelization, *applyBalancing, *skipLocks); err != nil {
 		return fmt.Errorf("re-balance ec shards for collection(s) %v: %v", collections, err)
 	}
 
