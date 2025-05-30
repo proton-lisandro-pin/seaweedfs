@@ -2,8 +2,10 @@ package types
 
 import (
 	"fmt"
-	"github.com/seaweedfs/seaweedfs/weed/util"
+	"math"
 	"strconv"
+
+	"github.com/seaweedfs/seaweedfs/weed/util"
 )
 
 type NeedleId uint64
@@ -11,6 +13,8 @@ type NeedleId uint64
 const (
 	NeedleIdSize  = 8
 	NeedleIdEmpty = 0
+	NeedleIdMin   = NeedleId(0)
+	NeedleIdMax   = NeedleId(math.MaxUint64)
 )
 
 func NeedleIdToBytes(bytes []byte, needleId NeedleId) {
