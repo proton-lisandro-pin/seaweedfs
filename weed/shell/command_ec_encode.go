@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/seaweedfs/seaweedfs/weed/storage/types"
 	"io"
 	"time"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/pb/volume_server_pb"
 	"github.com/seaweedfs/seaweedfs/weed/storage/erasure_coding"
 	"github.com/seaweedfs/seaweedfs/weed/storage/needle"
+	"github.com/seaweedfs/seaweedfs/weed/storage/types"
 )
 
 func init() {
@@ -71,6 +71,7 @@ func (c *commandEcEncode) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 	forceChanges := encodeCommand.Bool("force", false, "force the encoding even if the cluster has less than recommended 4 nodes")
 	shardReplicaPlacement := encodeCommand.String("shardReplicaPlacement", "", "replica placement for EC shards, or master default if empty")
 	applyBalancing := encodeCommand.Bool("rebalance", false, "re-balance EC shards after creation")
+	volumeLimit := encodeCommand.Int("volumeLimit", 0, "maximum number of volumes to encode")
 
 	if err = encodeCommand.Parse(args); err != nil {
 		return nil
@@ -113,6 +114,11 @@ func (c *commandEcEncode) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 			return err
 		}
 		balanceCollections = []string{*collection}
+	}
+
+	if *volumeLimit > 0 && len(volumeIds) > *volumeLimit {
+		fmt.Printf("limiting encoding to %d/%d volumes", *volumeLimit, len(volumeIds))
+		volumeIds = volumeIds[:*volumeLimit]
 	}
 
 	// encode all requested volumes...
@@ -301,5 +307,6 @@ func collectVolumeIdsForEcEncode(commandEnv *CommandEnv, selectedCollection stri
 		}
 	}
 
+	fmt.Printf("collected %d volumes to process\n", len(vids))
 	return
 }
